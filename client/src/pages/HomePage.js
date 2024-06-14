@@ -92,7 +92,7 @@ const HomePage = () => {
   const handleDelete = async (record) => {
     try {
       setLoading(true);
-      await axios.post("/api/v1/transections/delete-transections", {
+      await axios.post("/transections/delete-transections", {
         transectionId: record._id,
       });
       setLoading(false);
@@ -110,7 +110,7 @@ const HomePage = () => {
       const user = JSON.parse(localStorage.getItem("user"));
       setLoading(true);
       if (edittable) {
-        await axios.post("/api/v1/transections/edit-transections", {
+        await axios.post("/transections/edit-transections", {
           payload: {
             ...values,
             userid: user._id,
@@ -119,7 +119,7 @@ const HomePage = () => {
         });
         message.success("Transection updated Successfully");
       } else {
-        await axios.post("/api/v1/transections/add-transections", {
+        await axios.post("/transections/add-transections", {
           ...values,
           userid: user._id,
         });
@@ -128,7 +128,7 @@ const HomePage = () => {
       setShowModal(false);
       setEdittable(null);
       // Refresh transactions
-      const res = await axios.post("/api/v1/transections/get-transections", {
+      const res = await axios.post("/transections/get-transections", {
         userid: user._id,
         frequency,
         selectedDate,
