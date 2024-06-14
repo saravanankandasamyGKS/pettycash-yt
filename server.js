@@ -17,7 +17,7 @@ const app = express();
 app.use(morgan("dev"));
 app.use(express.json());
 app.use(cors({
-  
+  origin:"https://main--zingy-brigadeiros-96bde4.netlify.app/login"
 }));
 
 // user routes
