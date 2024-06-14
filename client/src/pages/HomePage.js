@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Form, Input, Modal, Select, Table, message, DatePicker } from "antd";
 import {
-  UnderlineOutlined,
   AreaChartOutlined,
   UnorderedListOutlined,
+  EditOutlined,
+  DeleteOutlined,
 } from "@ant-design/icons";
 import Layout from "./../components/Layout/Layout";
 import axios from "axios";
@@ -20,7 +21,9 @@ const HomePage = () => {
   const [selectedDate, setSelecteddate] = useState([]);
   const [type, setType] = useState("all");
   const [viewData, setViewData] = useState("table");
-  //table data
+  const [edittable, setEdittable] = useState(null);
+
+  // Table columns
   const columns = [
     {
       title: "Date",
@@ -45,12 +48,27 @@ const HomePage = () => {
     },
     {
       title: "Actions",
+      render: (text, record) => (
+        <div>
+          <EditOutlined
+            onClick={() => {
+              setEdittable(record);
+              setShowModal(true);
+            }}
+          />
+          <DeleteOutlined
+            className="mx-2"
+            onClick={() => {
+              handleDelete(record);
+            }}
+          />
+        </div>
+      ),
     },
   ];
 
-  //useEffect Hook
+  // get all transactions
   useEffect(() => {
-    //getall transactions
     const getAllTransetion = async () => {
       try {
         const user = JSON.parse(localStorage.getItem("user"));
@@ -63,31 +81,67 @@ const HomePage = () => {
         });
         setLoading(false);
         setAllTransection(res.data);
-        console.log(res.data);
       } catch (error) {
-        console.log(error);
+        setLoading(false);
         message.error("Fetch Issue With Transection");
       }
     };
     getAllTransetion();
   }, [frequency, selectedDate, type]);
-  //form handling
+  //delete handle
+  const handleDelete = async (record) => {
+    try {
+      setLoading(true);
+      await axios.post("/api/v1/transections/delete-transections", {
+        transectionId: record._id,
+      });
+      setLoading(false);
+      message.success("Transaction Delected!");
+    } catch (error) {
+      setLoading(false);
+      console.log(error);
+      message.error("unable to delete");
+    }
+  };
+
+  // Form handling
   const handleSubmit = async (values) => {
     try {
       const user = JSON.parse(localStorage.getItem("user"));
       setLoading(true);
-      await axios.post("/transections/add-transections", {
-        ...values,
-        userid: user._id,
-      });
-      setLoading(false);
-      message.success("Transection Added Successfully");
+      if (edittable) {
+        await axios.post("/api/v1/transections/edit-transections", {
+          payload: {
+            ...values,
+            userid: user._id,
+          },
+          transectionId: edittable._id,
+        });
+        message.success("Transection updated Successfully");
+      } else {
+        await axios.post("/api/v1/transections/add-transections", {
+          ...values,
+          userid: user._id,
+        });
+        message.success("Transection added Successfully");
+      }
       setShowModal(false);
+      setEdittable(null);
+      // Refresh transactions
+      const res = await axios.post("/api/v1/transections/get-transections", {
+        userid: user._id,
+        frequency,
+        selectedDate,
+        type,
+      });
+      setAllTransection(res.data);
+      setLoading(false);
     } catch (error) {
       setLoading(false);
-      message.error("Failed to add transection");
+      message.error("Failed to add/update transection");
     }
   };
+
   return (
     <Layout>
       {loading && <Spinner />}
@@ -114,17 +168,18 @@ const HomePage = () => {
             <Select.Option value="income">INCOME</Select.Option>
             <Select.Option value="expense">Expense</Select.Option>
           </Select>
-          {frequency === "type" && (
-            <RangePicker value={type} onChange={(values) => setType(values)} />
-          )}
         </div>
         <div className="switch-icons">
           <UnorderedListOutlined
-            className={`mx-2 ${viewData === 'table' ? 'active-icon':'inactive-icon'}`}
+            className={`mx-2 ${
+              viewData === "table" ? "active-icon" : "inactive-icon"
+            }`}
             onClick={() => setViewData("table")}
           />
           <AreaChartOutlined
-            className={`mx-2 ${viewData === 'analytics' ? 'active-icon':'inactive-icon'}`}
+            className={`mx-2 ${
+              viewData === "analytics" ? "active-icon" : "inactive-icon"
+            }`}
             onClick={() => setViewData("analytics")}
           />
         </div>
@@ -138,21 +193,27 @@ const HomePage = () => {
         </div>
       </div>
       <div className="content">
-        {viewData==='table' ? (<Table columns={columns} dataSource={allTransection} />):
-       (<Analytics allTransection={allTransection}/>
-       )}
+        {viewData === "table" ? (
+          <Table columns={columns} dataSource={allTransection} />
+        ) : (
+          <Analytics allTransection={allTransection} />
+        )}
       </div>
       <Modal
-        title="Add Transection"
+        title={edittable ? "Edit Transection" : "Add Transection"}
         open={showModal}
         onCancel={() => setShowModal(false)}
         footer={false}
       >
-        <Form layout="vertical" onFinish={handleSubmit}>
+        <Form
+          layout="vertical"
+          onFinish={handleSubmit}
+          initialValues={edittable}
+        >
           <Form.Item label="Amount" name="amount">
             <Input type="text" />
           </Form.Item>
-          <Form.Item label="type" name="type">
+          <Form.Item label="Type" name="type">
             <Select>
               <Select.Option value="income">Income</Select.Option>
               <Select.Option value="expense">Expense</Select.Option>
@@ -182,7 +243,6 @@ const HomePage = () => {
           </Form.Item>
           <div className="d-flex justify-content-end">
             <button type="submit" className="btn btn-primary">
-              {" "}
               SAVE
             </button>
           </div>
