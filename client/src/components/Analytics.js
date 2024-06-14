@@ -134,7 +134,7 @@ const Analytics = ({ allTransection }) => {
                   transaction.type === "expense" &&
                   transaction.category === category
               )
-              .reduce((acc, transaction) => acc + transaction.amount, 0);
+              .reduce((acc, transaction) => acc - transaction.amount, 0);
             return (
               amount > 0 && (
                 <div className="card">
