@@ -10,7 +10,7 @@ const Register = () => {
   const submitHandler = async (values) => {
     try {
       setLoading(true);
-      await axios.post("/api/v1/users/register", values);
+      await axios.post("/api/v1/user/register", values);
       message.success("Registeration Successfull");
       setLoading(false);
       navigate("/login");
